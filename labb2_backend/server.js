@@ -29,7 +29,8 @@ createTable();
 
 
 
-// ROUTEs
+// ROUTES
+//Syntax - PostgreSQL
 
 // 1. GET - Hämta arbetslivserfarenhet
 
@@ -129,9 +130,43 @@ app.post("/workexperience", async (req, res) => {
 
 //3. PUT - Uppdatera data
 
-//4. DELETE - Ta bort data
+//4. DELETE - Ta bort data baserat på ID
+try {
+    //Hämtar id från url parametern
+    const id = req.params.id;
 
 
+    //SQL fråga för att radera en post baserat på id
+    const result = await db.query(
+        "DELETE FROM workexperience WHERE id = $1", [id]
+    );
+
+
+    // KOntroll för att se om något raderats.
+    //Om 0 så finns inte post
+    if (result.rowCount === 0) {
+        //Statuskod 404 för att post inte hittas
+        return res.status(404).json({
+            error: "Posten finns inte"
+        });
+    }
+
+
+    //Skickar tillbaka vad som raderades
+    //message är vad som hände.
+    res.json({
+        message: "Post raderad",
+    });
+
+
+} catch (error) {
+    //VId fel skrivs felmeddelande ut i konsol
+    console.error("Fel vid DELETE:", error);
+    //Statuskod 500 för fel
+    res.status(500).json({
+        error: "Kunde inte radera post"
+    });
+};
 
 
 /////// STARTA SERVER /////
