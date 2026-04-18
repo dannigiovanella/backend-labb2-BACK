@@ -48,7 +48,84 @@ app.get("/workexperience", async (req, res) => {
     }
 });
 
-//2. POST - Lägga till data
+//2. POST - Lägga till arbetslivserfarenhet
+app.post("/workexperience", async (req, res) => {
+    try {
+        //Hämtar data från request body 
+        const {
+            companyname,
+            jobtitle,
+            location,
+            startdate,
+            enddate,
+            description
+        } = req.body;
+
+        //Validering. Inga tomma fält
+
+        // Kontrollerar att alla fält är ifyllda
+        if (
+            !companyname ||
+            !jobtitle ||
+            !location ||
+            !startdate ||
+            !enddate ||
+            !description
+        ) {
+            return res.status(400).json({
+                error: "Alla fält måste fyllas i"
+            });
+        }
+
+        //Tar bort eventuell whitespace(tex mellanslag) så detta inte ersätter ett värde
+        if (
+            companyname.trim() === "" ||
+            jobtitle.trim() === "" ||
+            location.trim() === "" ||
+            description.trim() === ""
+        ) {
+            return res.status(400).json({
+                error: "Fält får inte vara tomma"
+            });
+        }
+
+        //INSERT - Insättning av värden med SQL-fråga
+        //RETURNING * gör att den skapade posten returneras direkt från db 
+        const insertQuery = `
+            INSERT INTO workexperience 
+            (companyname, jobtitle, location, startdate, enddate, description)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING *;
+        `;
+
+
+        //Kör insert queryn och skickar med värden
+        const result = await db.query(insertQuery, [
+            companyname,
+            jobtitle,
+            location,
+            startdate,
+            enddate,
+            description
+        ]);
+
+
+        //Skickar tillbaka den skapade posten som JSON
+        //Statuskod 201 för ny skapad post
+        res.status(201).json({
+            message: "Arbetserfarenhet tillagd",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        //Om något går fel. I konsol:
+        console.error("Fel vid POST:", error);
+        //Statuskod 500 för fel med felmeddelande
+        res.status(500).json({
+            error: "Kunde inte läggat ill data"
+        });
+    }
+});
 
 //3. PUT - Uppdatera data
 
