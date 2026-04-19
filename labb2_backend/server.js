@@ -99,6 +99,8 @@ app.post("/workexperience", async (req, res) => {
             companyname.trim() === "" ||
             jobtitle.trim() === "" ||
             location.trim() === "" ||
+            startdate.trim() === "" ||
+            enddate.trim() === "" ||
             description.trim() === ""
         ) {
 
@@ -157,12 +159,124 @@ app.post("/workexperience", async (req, res) => {
 });
 
 //3. PUT - Uppdatera data
+app.put("/workexperience/:id", async (req, res) => {
+    try {
+
+        // hämtar ID från url
+        const id = req.params.id;
+
+        //Kontrollerar så att ID finns eller är ett nummer. Statuskod 400 vid fel
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ error: "Ogiltigt ID" });
+        }
+
+        // hämtar nya värden från request body
+        const {
+            companyname,
+            jobtitle,
+            location,
+            startdate,
+            enddate,
+            description
+        } = req.body;
+
+        //Kontroll för att undivka tomma fält
+        if (
+            !companyname ||
+            !jobtitle ||
+            !location ||
+            !startdate ||
+            !enddate ||
+            !description
+        ) {
+
+            //Objekt för felmeddelande. Statuskod 400
+            const errorMessage = {
+                error: {
+                    message: "Alla fält måste fyllas i",
+                    status: 400
+                }
+            };
+
+            return res.status(400).json(errorMessage);
+        }
+
+
+        // Uppdaterar post med arbetslivserfarenhetm med SQL fråga
+        //RETURNING * ger tillbaka uppdaterad data
+        const updateWorkexperience = `
+            UPDATE workexperience SET 
+                companyname = $1,
+                jobtitle = $2,
+                location = $3,
+                startdate = $4,
+                enddate = $5,
+                description = $6
+
+            WHERE id = $7 RETURNING *;
+        `;
+
+
+        // Kör UPDATE queryn och skickar med värden
+        const result = await db.query(updateWorkexperience, [
+            companyname,
+            jobtitle,
+            location,
+            startdate,
+            enddate,
+            description,
+            id
+        ]);
+
+
+        // om ingen rad hittades
+        if (result.rowCount === 0) {
+
+            //Objekt för felmeddelande. Statuskod 404
+            const errorMessage = {
+                error: {
+                    message: "Posten finns inte",
+                    status: 404
+                }
+            };
+
+            return res.status(404).json(errorMessage);
+        }
+
+
+        // skickar tillbaka uppdaterad data
+        res.json({
+            message: "Post uppdaterad",
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+
+        console.error("Fel vid PUT:", error);
+
+        //Objekt för felmeddelande. Statuskod 500
+        const errorMessage = {
+            error: {
+                message: "Kunde inte uppdatera post",
+                status: 500
+            }
+        };
+
+        return res.status(500).json(errorMessage);
+    }
+});
+
 
 //4. DELETE - Ta bort data baserat på ID
 app.delete('/workexperience/:id', async (req, res) => {
     try {
         //Hämtar id från url parametern
         const id = req.params.id;
+
+        //Kontrollerar så att ID finns eller är ett nummer. Statuskod 400 vid fel
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ error: "Ogiltigt ID" });
+        }
 
 
         //SQL fråga för att radera en post baserat på id
@@ -186,9 +300,7 @@ app.delete('/workexperience/:id', async (req, res) => {
             return res.status(404).json(errorMessage);
         }
 
-
-        //Skickar tillbaka vad som raderades
-        //message är vad som hände.
+        //message skriver ut vad som hände vid lyckad radering.
         res.json({
             message: "Post raderad",
         });
