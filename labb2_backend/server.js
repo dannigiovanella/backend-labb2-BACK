@@ -45,7 +45,16 @@ app.get("/workexperience", async (req, res) => {
     } catch (error) {
         // Om något går fel visas felmeddelande i konsol samt statuskod 500
         console.error("Fel vid hämtning:", error);
-        res.status(500).json({ message: "Kunde inte hämta data" });
+
+        //Objekt för felmeddelande
+        const errorMessage = {
+            error: {
+                message: "Kunde inte hämta data",
+                status: 500
+            }
+        };
+
+        res.status(500).json(errorMessage);
     }
 });
 
@@ -62,8 +71,8 @@ app.post("/workexperience", async (req, res) => {
             description
         } = req.body;
 
-        //Validering. Inga tomma fält
 
+        //Validering. 
         // Kontrollerar att alla fält är ifyllda
         if (
             !companyname ||
@@ -73,9 +82,16 @@ app.post("/workexperience", async (req, res) => {
             !enddate ||
             !description
         ) {
-            return res.status(400).json({
-                error: "Alla fält måste fyllas i"
-            });
+
+            //Objekt för felmeddelande
+            const errorMessage = {
+                error: {
+                    message: "Alla fält måste fyllas i",
+                    status: 400
+                }
+            };
+
+            return res.status(400).json(errorMessage);
         }
 
         //Tar bort eventuell whitespace(tex mellanslag) så detta inte ersätter ett värde
@@ -85,9 +101,16 @@ app.post("/workexperience", async (req, res) => {
             location.trim() === "" ||
             description.trim() === ""
         ) {
-            return res.status(400).json({
-                error: "Fält får inte vara tomma"
-            });
+
+            //Objekt för felmeddelande
+            const errorMessage = {
+                error: {
+                    message: "Fält får inte vara tomma",
+                    status: 400
+                }
+            };
+
+            return res.status(400).json(errorMessage);
         }
 
         //INSERT - Insättning av värden med SQL-fråga
@@ -121,52 +144,71 @@ app.post("/workexperience", async (req, res) => {
     } catch (error) {
         //Om något går fel. I konsol:
         console.error("Fel vid POST:", error);
-        //Statuskod 500 för fel med felmeddelande
-        res.status(500).json({
-            error: "Kunde inte läggat ill data"
-        });
+
+        //Objekt för felmeddelande. Statuskod 500 för fel med felmeddelande
+        const errorMessage = {
+            error: {
+                message: "Kunde inte lägga till data",
+                status: 500
+            }
+        };
+        return res.status(500).json(errorMessage);
     }
 });
 
 //3. PUT - Uppdatera data
 
 //4. DELETE - Ta bort data baserat på ID
-try {
-    //Hämtar id från url parametern
-    const id = req.params.id;
+app.delete('/workexperience/:id', async (req, res) => {
+    try {
+        //Hämtar id från url parametern
+        const id = req.params.id;
 
 
-    //SQL fråga för att radera en post baserat på id
-    const result = await db.query(
-        "DELETE FROM workexperience WHERE id = $1", [id]
-    );
+        //SQL fråga för att radera en post baserat på id
+        const result = await db.query(
+            "DELETE FROM workexperience WHERE id = $1", [id]
+        );
 
 
-    // KOntroll för att se om något raderats.
-    //Om 0 så finns inte post
-    if (result.rowCount === 0) {
-        //Statuskod 404 för att post inte hittas
-        return res.status(404).json({
-            error: "Posten finns inte"
+        // KOntroll för att se om något raderats.
+        //Om 0 så finns inte post
+        if (result.rowCount === 0) {
+
+            //Objekt för felmeddelande. Statuskod 404 för att post inte hittas
+            const errorMessage = {
+                error: {
+                    message: "Posten finns inte",
+                    status: 404
+                }
+            };
+
+            return res.status(404).json(errorMessage);
+        }
+
+
+        //Skickar tillbaka vad som raderades
+        //message är vad som hände.
+        res.json({
+            message: "Post raderad",
         });
+
+
+    } catch (error) {
+        //VId fel skrivs felmeddelande ut i konsol
+        console.error("Fel vid DELETE:", error);
+
+        //Objket för felmeddelande. Statuskod 500 för fel
+        const errorMessage = {
+            error: {
+                message: "Kunde inte radera post",
+                status: 500
+            }
+        };
+
+        return res.status(500).json(errorMessage);
     }
-
-
-    //Skickar tillbaka vad som raderades
-    //message är vad som hände.
-    res.json({
-        message: "Post raderad",
-    });
-
-
-} catch (error) {
-    //VId fel skrivs felmeddelande ut i konsol
-    console.error("Fel vid DELETE:", error);
-    //Statuskod 500 för fel
-    res.status(500).json({
-        error: "Kunde inte radera post"
-    });
-};
+});
 
 
 /////// STARTA SERVER /////
